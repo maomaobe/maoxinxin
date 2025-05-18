@@ -75,12 +75,13 @@
   <div id="bestTime">🏆 最快记录：——</div>
   <div id="grid"></div>
 
-  <!-- 背景音乐 -->
-  <audio id="bgm" src="https://cdn.pixabay.com/download/audio/2021/11/24/audio_8ae8b6c1d2.mp3?filename=calm-background-ambient-11056.mp3" loop autoplay></audio>
+  <!-- 背景音乐，替换成你喜欢的链接或者本地地址 -->
+  <audio id="bgm" loop src="https://cdn.pixabay.com/download/audio/2022/03/26/audio_4ad37a1780.mp3?filename=relaxing-piano-music-11341.mp3"></audio>
+
   <!-- 点击音效 -->
-  <audio id="clickSound" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_6c5d26ec1f.mp3?filename=mouse-click-14583.mp3"></audio>
-  <!-- 胜利音效 -->
-  <audio id="winSound" src="https://cdn.pixabay.com/download/audio/2022/03/23/audio_52a892d71b.mp3?filename=success-6075.mp3"></audio>
+  <audio id="clickSound" src="https://actions.google.com/sounds/v1/ui/click.ogg"></audio>
+  <!-- 完成胜利音效 -->
+  <audio id="winSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
 
   <script>
     let startTime = null;
@@ -90,9 +91,9 @@
     let size = 5;
     let mode = 'number';
 
+    const bgm = document.getElementById('bgm');
     const clickSound = document.getElementById('clickSound');
     const winSound = document.getElementById('winSound');
-    const bgm = document.getElementById('bgm');
 
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
@@ -113,39 +114,16 @@
       }
     }
 
-   function startGame() {
-  size = parseInt(document.getElementById('size').value);
-  mode = document.getElementById('mode').value;
-  const total = size * size;
-  sequence = generateSequence(mode, total);
-  shuffle(sequence);
-  currentTarget = 1;
-  startTime = null;
-  clearInterval(timerInterval);
-  document.getElementById('timer').textContent = '⏱️ 用时：0.00 秒';
-
-  const grid = document.getElementById('grid');
-  grid.innerHTML = '';
-  grid.style.gridTemplateColumns = `repeat(${size}, 60px)`;
-  grid.style.gridTemplateRows = `repeat(${size}, 60px)`;
-
-  sequence.forEach((item) => {
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-    cell.textContent = item;
-    cell.dataset.value = item;
-    cell.onclick = () => handleClick(cell);
-    grid.appendChild(cell);
-  });
-
-  loadBestTime();
-
-  // 这里让bgm在点击开始游戏按钮后播放，音量调小点
-  bgm.volume = 0.2;
-  bgm.play().catch(() => {
-    console.log("请点击页面以启动声音");
-  });
-}
+    function startGame() {
+      size = parseInt(document.getElementById('size').value);
+      mode = document.getElementById('mode').value;
+      const total = size * size;
+      sequence = generateSequence(mode, total);
+      shuffle(sequence);
+      currentTarget = 1;
+      startTime = null;
+      clearInterval(timerInterval);
+      document.getElementById('timer').textContent = '⏱️ 用时：0.00 秒';
 
       const grid = document.getElementById('grid');
       grid.innerHTML = '';
@@ -162,8 +140,12 @@
       });
 
       loadBestTime();
+
+      // 播放背景音乐，音量低点，失败不会报错
       bgm.volume = 0.2;
-      bgm.play().catch(() => {});  // 防止未交互自动播放限制报错
+      bgm.play().catch(() => {
+        console.log("请点击页面以启动声音");
+      });
     }
 
     function handleClick(cell) {
@@ -179,7 +161,8 @@
         expected = String.fromCharCode(65 + (currentTarget - 1) % 26);
       }
 
-      if (cell.textContent == expected && !cell.classList.contains('clicked')) {
+      if (cell.textContent == expected) {
+        if (cell.classList.contains('clicked')) return; // 已点过不再计数
         cell.classList.add('clicked');
         clickSound.currentTime = 0;
         clickSound.play();
@@ -233,10 +216,8 @@
       loadBestTime();
     });
 
-    // 页面加载时启动游戏
-    window.onload = () => {
-      startGame();
-    };
+    // 页面加载后自动启动一次游戏和显示记录
+    startGame();
   </script>
 </body>
 </html>
