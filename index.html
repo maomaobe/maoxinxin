@@ -113,16 +113,39 @@
       }
     }
 
-    function startGame() {
-      size = parseInt(document.getElementById('size').value);
-      mode = document.getElementById('mode').value;
-      const total = size * size;
-      sequence = generateSequence(mode, total);
-      shuffle(sequence);
-      currentTarget = 1;
-      startTime = null;
-      clearInterval(timerInterval);
-      document.getElementById('timer').textContent = '⏱️ 用时：0.00 秒';
+   function startGame() {
+  size = parseInt(document.getElementById('size').value);
+  mode = document.getElementById('mode').value;
+  const total = size * size;
+  sequence = generateSequence(mode, total);
+  shuffle(sequence);
+  currentTarget = 1;
+  startTime = null;
+  clearInterval(timerInterval);
+  document.getElementById('timer').textContent = '⏱️ 用时：0.00 秒';
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  grid.style.gridTemplateColumns = `repeat(${size}, 60px)`;
+  grid.style.gridTemplateRows = `repeat(${size}, 60px)`;
+
+  sequence.forEach((item) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.textContent = item;
+    cell.dataset.value = item;
+    cell.onclick = () => handleClick(cell);
+    grid.appendChild(cell);
+  });
+
+  loadBestTime();
+
+  // 这里让bgm在点击开始游戏按钮后播放，音量调小点
+  bgm.volume = 0.2;
+  bgm.play().catch(() => {
+    console.log("请点击页面以启动声音");
+  });
+}
 
       const grid = document.getElementById('grid');
       grid.innerHTML = '';
