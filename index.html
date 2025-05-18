@@ -73,24 +73,22 @@
   <div id="bestTime">🏆 最快记录：——</div>
   <div id="grid"></div>
 
-  <audio id="clickSound" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YRAAAAD//w=="></audio>
-  <audio id="winSound" src="data:audio/wav;base64,UklGRhwAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YRAAAAAA/////wD///8A////AP///w=="></audio>
+  <!-- 音效 -->
+  <audio id="clickSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_3fefcfea5b.mp3"></audio>
+  <audio id="winSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_67885bcb13.mp3"></audio>
+  <audio id="bgm" src="https://cdn.pixabay.com/audio/2022/03/17/audio_9947a2d48b.mp3" loop></audio>
 
   <script>
     let startTime = null;
     let timerInterval = null;
-    let currentTarget = 1;
+    let currentIndex = 0;
     let sequence = [];
     let size = 5;
     let mode = 'number';
-    const bgm = document.getElementById('bgm');
-bgm.volume = 0.3; // 调低音量，不会太吵
-clickSound.volume = 0.5;
-winSound.volume = 0.8;
-
 
     const clickSound = document.getElementById('clickSound');
     const winSound = document.getElementById('winSound');
+    const bgm = document.getElementById('bgm');
 
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
@@ -112,12 +110,18 @@ winSound.volume = 0.8;
     }
 
     function startGame() {
+      // 播放背景音乐（用户交互后才允许自动播放）
+      bgm.volume = 0.5;
+      bgm.play().catch(() => {
+        console.log("等待用户交互后再播放背景音乐");
+      });
+
       size = parseInt(document.getElementById('size').value);
       mode = document.getElementById('mode').value;
       const total = size * size;
       sequence = generateSequence(mode, total);
       shuffle(sequence);
-      currentTarget = 1;
+      currentIndex = 0;
       startTime = null;
       clearInterval(timerInterval);
       document.getElementById('timer').textContent = '⏱️ 用时：0.00 秒';
@@ -127,7 +131,7 @@ winSound.volume = 0.8;
       grid.style.gridTemplateColumns = `repeat(${size}, 60px)`;
       grid.style.gridTemplateRows = `repeat(${size}, 60px)`;
 
-      sequence.forEach((item, index) => {
+      sequence.forEach((item) => {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.textContent = item;
@@ -135,6 +139,8 @@ winSound.volume = 0.8;
         cell.onclick = () => handleClick(cell);
         grid.appendChild(cell);
       });
+
+      loadBestTime();
     }
 
     function handleClick(cell) {
@@ -143,19 +149,15 @@ winSound.volume = 0.8;
         timerInterval = setInterval(updateTimer, 50);
       }
 
-      let expected;
-      if (mode === 'number') {
-        expected = currentTarget;
-      } else {
-        expected = String.fromCharCode(65 + (currentTarget - 1) % 26);
-      }
+      const expectedValue = sequence[currentIndex];
 
-      if (cell.textContent == expected) {
+      if (cell.textContent == expectedValue) {
         cell.classList.add('clicked');
         clickSound.currentTime = 0;
         clickSound.play();
-        currentTarget++;
-        if (currentTarget > sequence.length) {
+        currentIndex++;
+
+        if (currentIndex >= sequence.length) {
           clearInterval(timerInterval);
           winSound.play();
           const finalTime = ((performance.now() - startTime) / 1000).toFixed(2);
@@ -205,7 +207,6 @@ winSound.volume = 0.8;
     });
 
     startGame();
-    loadBestTime();
   </script>
 </body>
 </html>
