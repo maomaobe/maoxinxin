@@ -83,6 +83,11 @@
     let sequence = [];
     let size = 5;
     let mode = 'number';
+    const bgm = document.getElementById('bgm');
+bgm.volume = 0.3; // 调低音量，不会太吵
+clickSound.volume = 0.5;
+winSound.volume = 0.8;
+
 
     const clickSound = document.getElementById('clickSound');
     const winSound = document.getElementById('winSound');
