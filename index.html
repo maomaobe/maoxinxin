@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>舒尔特方格训练</title>
+  <style>
+    body {
+      font-family: "Helvetica Neue", sans-serif;
+      background-color: #f5f7fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      color: #333;
+    }
+    h1 {
+      margin-bottom: 10px;
+      color: #4a6fa5;
+    }
+    .controls {
+      margin-bottom: 20px;
+    }
+    select, button {
+      margin: 0 5px;
+      padding: 6px 10px;
+      font-size: 16px;
+    }
+    #grid {
+      display: grid;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+    .cell {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #ffffff;
+      border: 1px solid #ccc;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      user-select: none;
+    }
+    .cell.clicked {
+      background-color: #d0ebff;
+      color: #666;
+      cursor: default;
+    }
+    #timer, #bestTime {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>舒尔特方格训练</h1>
+  <div class="controls">
+    <label>选择尺寸：
+      <select id="size">
+        <option value="5">5 x 5</option>
+        <option value="6">6 x 6</option>
+        <option value="7">7 x 7</option>
+      </select>
+    </label>
+    <label>模式：
+      <select id="mode">
+        <option value="number">数字</option>
+        <option value="letter">字母</option>
+      </select>
+    </label>
+    <button onclick="startGame()">开始游戏</button>
+  </div>
+  <div id="timer">⏱️ 用时：0.00 秒</div>
+  <div id="bestTime">🏆 最快记录：——</div>
+  <div id="grid"></div>
+
+  <!-- 背景音乐 -->
+  <audio id="bgm" src="https://cdn.pixabay.com/download/audio/2021/11/24/audio_8ae8b6c1d2.mp3?filename=calm-background-ambient-11056.mp3" loop autoplay></audio>
+  <!-- 点击音效 -->
+  <audio id="clickSound" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_6c5d26ec1f.mp3?filename=mouse-click-14583.mp3"></audio>
+  <!-- 胜利音效 -->
+  <audio id="winSound" src="https://cdn.pixabay.com/download/audio/2022/03/23/audio_52a892d71b.mp3?filename=success-6075.mp3"></audio>
+
+  <script>
+    let startTime = null;
+    let timerInterval = null;
+    let currentTarget = 1;
+    let sequence = [];
+    let size = 5;
+    let mode = 'number';
+
+    const clickSound = document.getElementById('clickSound');
+    const winSound = document.getElementById('winSound');
+    const bgm = document.getElementById('bgm');
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function generateSequence(mode, total) {
+      if (mode === 'number') {
+        return Array.from({ length: total }, (_, i) => i + 1);
+      } else {
+        const letters = [];
+        for (let i = 0; i < total; i++) {
+          letters.push(String.fromCharCode(65 + (i % 26)));
+        }
+        return letters;
+      }
+    }
+
+    function startGame() {
+      size = parseInt(document.getElementById('size').value);
+      mode = document.getElementById('mode').value;
+      const total = size * size;
+      sequence = generateSequence(mode, total);
+      shuffle(sequence);
+      currentTarget = 1;
+      startTime = null;
+      clearInterval(timerInterval);
+      document.getElementById('timer').textContent = '⏱️ 用时：0.00 秒';
+
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      grid.style.gridTemplateColumns = `repeat(${size}, 60px)`;
+      grid.style.gridTemplateRows = `repeat(${size}, 60px)`;
+
+      sequence.forEach((item) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.textContent = item;
+        cell.dataset.value = item;
+        cell.onclick = () => handleClick(cell);
+        grid.appendChild(cell);
+      });
+
+      loadBestTime();
+      bgm.volume = 0.2;
+      bgm.play().catch(() => {});  // 防止未交互自动播放限制报错
+    }
+
+    function handleClick(cell) {
+      if (!startTime) {
+        startTime = performance.now();
+        timerInterval = setInterval(updateTimer, 50);
+      }
+
+      let expected;
+      if (mode === 'number') {
+        expected = currentTarget;
+      } else {
+        expected = String.fromCharCode(65 + (currentTarget - 1) % 26);
+      }
+
+      if (cell.textContent == expected && !cell.classList.contains('clicked')) {
+        cell.classList.add('clicked');
+        clickSound.currentTime = 0;
+        clickSound.play();
+        currentTarget++;
+        if (currentTarget > sequence.length) {
+          clearInterval(timerInterval);
+          winSound.play();
+          const finalTime = ((performance.now() - startTime) / 1000).toFixed(2);
+          updateBestTime(finalTime);
+          setTimeout(() => {
+            alert(`🎉 太棒啦！用时 ${finalTime} 秒！`);
+            startGame();
+          }, 300);
+        }
+      }
+    }
+
+    function updateTimer() {
+      if (!startTime) return;
+      const now = performance.now();
+      const elapsed = ((now - startTime) / 1000).toFixed(2);
+      document.getElementById('timer').textContent = `⏱️ 用时：${elapsed} 秒`;
+    }
+
+    function updateBestTime(currentTime) {
+      const key = `schulte_best_${size}_${mode}`;
+      const best = localStorage.getItem(key);
+      if (!best || currentTime < parseFloat(best)) {
+        localStorage.setItem(key, currentTime);
+        document.getElementById('bestTime').textContent = `🏆 最快记录：${currentTime} 秒（新纪录！）`;
+      } else {
+        document.getElementById('bestTime').textContent = `🏆 最快记录：${best} 秒`;
+      }
+    }
+
+    function loadBestTime() {
+      const key = `schulte_best_${size}_${mode}`;
+      const best = localStorage.getItem(key);
+      document.getElementById('bestTime').textContent = best
+        ? `🏆 最快记录：${best} 秒`
+        : `🏆 最快记录：——`;
+    }
+
+    document.getElementById('size').addEventListener('change', () => {
+      size = parseInt(document.getElementById('size').value);
+      loadBestTime();
+    });
+
+    document.getElementById('mode').addEventListener('change', () => {
+      mode = document.getElementById('mode').value;
+      loadBestTime();
+    });
+
+    // 页面加载时启动游戏
+    window.onload = () => {
+      startGame();
+    };
+  </script>
+</body>
+</html>
